@@ -1,3 +1,6 @@
 /src/config/auto_mode.toml
 /src/config/demo_mode.toml
 /src/config/online_exp.toml
+/src/data_utils/__pycache__
+.env
+online_results

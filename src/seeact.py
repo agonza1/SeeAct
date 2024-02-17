@@ -158,10 +158,17 @@ async def main(config, base_dir) -> None:
         storage_state = None
 
     # openai settings
+    # Get OpenAI API key from environment variable
+    env_openai_api_key = os.getenv("OPENAI_API_KEY")
     openai_config = config["openai"]
-    if openai_config["api_key"] == "Your API Key Here":
-        raise Exception(
-            f"Please set your GPT API key first. (in {os.path.join(base_dir, 'config', 'demo_mode.toml')} by default)")
+    # Use OpenAI API key from environment variable if available, otherwise use config value
+    if not env_openai_api_key:
+        if openai_config["api_key"] == "Your API Key Here":
+            raise Exception(
+                f"Please set your GPT API key first. (in {os.path.join(base_dir, 'config', 'demo_mode.toml')} by default)"
+            )
+    else:
+        openai_config["api_key"] = env_openai_api_key
 
     # playwright settings
     save_video = config["playwright"]["save_video"]

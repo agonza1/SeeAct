@@ -1,7 +1,7 @@
 [basic]
 is_demo = true # Set to true for demo mode, prompting user input for tasks and URLs. False reads tasks from a JSON file.
 save_file_dir = "../online_results" # Directory to save the results of the program's operations.
-default_task ="Find pdf of paper \"GPT-4V(ision) is a Generalist Web Agent, if Grounded\" from arXiv" # Default task to perform.
+default_task ="Find blog post \"WebRTC.ventures AI\"" # Default task to perform.
 default_website = "https://www.google.com/" # Default website to start the task.
 
 [experiment]
@@ -21,9 +21,9 @@ dev_mode=false # Developer mode toggle.
 # Pretrained model: https://huggingface.co/osunlp/MindAct_CandidateGeneration_deberta-v3-base
 
 [openai]
-api_key = "Your API Key Here" # OpenAI API key for GPT-4 access.
+api_key = "Your API Key Here" # OpenAI API key for GPT-4 access (env var can be used instead).
 # You can find your API key at https://platform.openai.com/account/api-keys.
-rate_limit = -1 # Rate limit for API calls (-1 for no limit).
+rate_limit = 30 # Rate limit (minutes) for API calls (-1 for no limit).
 model = "gpt-4-vision-preview" # Model name, indicating the use of GPT-4 with vision capabilities.
 temperature = 0 # Temperature setting for GPT's responses, controlling randomness.
 
