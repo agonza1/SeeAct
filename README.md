@@ -1,6 +1,6 @@
 [//]: # (# SeeAct <br> GPT-4V&#40;ision&#41; is a Generalist Web Agent, if Grounded)
 
-<h1 align="center">SeeAct <br> GPT-4V(ision) is a Generalist Web Agent, if Grounded</h1>
+<h1 align="center">R-SeeAct <br> GPT-4V(ision) is a Generalist Remote Controlled WebRTC Agent, if Grounded</h1>
 
 <p align="center">
 <a href="https://osu-nlp-group.github.io/Mind2Web/"><img src="https://img.shields.io/badge/Mind2Web-red.svg" alt="Mind2Web Benchmark"></a>
@@ -11,11 +11,12 @@
 <a href="https://twitter.com/osunlp"><img src="https://img.shields.io/twitter/follow/OSU_NLP_Group" alt="Twitter Follow"></a>
 </p>
 
-SeeAct is a system for <a href="https://osu-nlp-group.github.io/Mind2Web/">generalist web agents</a> that autonomously carry out tasks on any given website, 
+R-SeeAct (based on the forked SeeAct) is a system for <a href="https://osu-nlp-group.github.io/Mind2Web/">generalist WebRTC agents</a> that autonomously carry out tasks on any given website, 
 with a focus on large multimodal models (LMMs) such as GPT-4V(ision). 
-It consists of two main components: 
+It consists of three main components: 
 (1) A robust codebase that supports running web agents on live websites, and
-(2) an innovative framework that utilizes LMMs as generalist web agents.
+(2) An innovative framework that utilizes LMMs as generalist web agents.
+(3) A [Janus](https://github.com/meetecho/janus-gateway) compatible WebRTC client (based on [Aiortc](https://github.com/aiortc/aiortc)) that can be remotely controlled
 
 ![Demo Video GIF](https://raw.githubusercontent.com/OSU-NLP-Group/SeeAct/gh-pages/static/videos/readme_demo.gif)
 
@@ -48,11 +49,20 @@ pip install -r requirements.txt
 playwright install
 ```
 
-
 ## Running Web Agent
 **Please fill in the OpenAI API Key in the configuration file at `src/config/demo_mode.toml` before running SeeAct.
 Your API key is available through your [OpenAI account page](https://platform.openai.com/account/api-keys). 
 Note that the key is only stored locally and will NOT be shared anywhere.** 
+
+### Remote Mode
+
+Run R-SeeAct in demo mode with the following command:
+
+```bash
+cd src
+python webrtc-janus-client.py
+```
+Demo mode will use the default configuration file at `src/config/remote_mode.toml`.
 
 ### Demo Mode
 

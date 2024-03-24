@@ -26,6 +26,12 @@ from tqdm.autonotebook import tqdm, trange
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+#fint_topk is designed to identify the top k elements along a specified axis in a given array
+#a: The input array.
+#k: The number of top elements to retrieve.
+#axis: The axis along which to find the top elements (default is the last axis).
+#largest: A boolean flag indicating whether to find the largest or smallest elements.
 def find_topk(a, k, axis=-1, largest=True, sorted=True):
     if axis is None:
         axis_size = a.size
@@ -53,7 +59,7 @@ def find_topk(a, k, axis=-1, largest=True, sorted=True):
     return topk_values, topk_indices
 
 
-
+# This class defines a method fit() used for training a model
 class CrossEncoder(CrossEncoder):
     def fit(
         self,
