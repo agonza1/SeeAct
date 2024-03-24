@@ -3,8 +3,13 @@
 <h1 align="center">R-SeeAct <br> GPT-4V(ision) is a Generalist Remote Controlled WebRTC Agent, if Grounded</h1>
 
 <p align="center">
-<a href="https://osu-nlp-group.github.io/Mind2Web/"><img src="https://img.shields.io/badge/Mind2Web-red.svg" alt="Mind2Web Benchmark"></a>
+<a href="https://osu-nlp-group.github.io/Mind2Web/"><img src="https://img.shields.io/badge/Mind2Web-Homeage-red.svg" alt="Mind2Web Benchmark"></a>
 <a href="https://www.licenses.ai/ai-licenses"><img src="https://img.shields.io/badge/OPEN RAIL-License-green.svg" alt="Open RAIL License"></a>
+<a href="https://huggingface.co/datasets/osunlp/Mind2Web"><img src="https://img.shields.io/badge/Mind2Web-Dataset-yellow.svg" alt="Mind2Web Benchmark"></a>
+<a href="https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web"><img src="https://img.shields.io/badge/Multimodal Mind2Web-Dataset-blue.svg" alt="Mind2Web Benchmark"></a>
+</p>
+
+<p align="center">
 <a href="https://www.python.org/downloads/release/python-3109/"><img src="https://img.shields.io/badge/python-3.10-blue.svg" alt="Python 3.10"></a>
 <a href="https://github.com/OSU-NLP-Group/SeeAct"><img src="https://img.shields.io/github/stars/OSU-NLP-Group/SeeAct?style=social" alt="GitHub Stars"></a>
 <a href="https://github.com/OSU-NLP-Group/SeeAct/issues"><img src="https://img.shields.io/github/issues-raw/OSU-NLP-Group/SeeAct" alt="Open Issues"></a>
@@ -23,9 +28,13 @@ It consists of three main components:
 <p align="center">
 <a href="https://osu-nlp-group.github.io/SeeAct/">Website</a> •
 <a href="https://arxiv.org/abs/2401.01614">Paper</a> •
+<a href="https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web">Dataset</a> •
 <a href="https://twitter.com/ysu_nlp/status/1742398541660639637">Twitter</a>
 </p>
 
+<h3>Updates</h3>
+
+- 2024/3/18: [Multimodal-Mind2Web](https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web) dataset released. We have paired each HTML document with the corresponding webpage screenshot image and saved the trouble of downloading [Mind2Web Raw Dump](https://github.com/OSU-NLP-Group/Mind2Web?tab=readme-ov-file#raw-dump-with-full-traces-and-snapshots).
 
 # SeeAct Tool
 
@@ -131,12 +140,46 @@ and prevent exposure to potential safety and legal risks.
 **To prevent unintended consequential errors, we advise against using SeeAct for tasks that require account login.**
 
 
+# Multimodal-Mind2Web Dataset
+[Multimodal-Mind2Web](https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web) is the multimodal version of Mind2Web dataset hosted on Huggingface under OpenRAIL License. 
+In this dataset, we align each HTML document in the dataset with its corresponding webpage screenshot image from the [Mind2Web Raw Dump](https://github.com/OSU-NLP-Group/Mind2Web?tab=readme-ov-file#raw-dump-with-full-traces-and-snapshots).
+This multimodal version addresses the inconvenience of loading images from the ~300GB Mind2Web Raw Dump. 
+
+### Data Splits
+- train: 7775 actions from 1009 tasks.
+- test_task: 1339 actions from 177 tasks. Tasks from the same website are seen during training.
+- test_website: 1019 actions from 142 tasks. Websites are not seen during training.
+- test_domain: 4060 actions from 694 tasks. Entire domains are not seen during training.
+
+The **_train_** set may include some screenshot images not properly rendered caused by rendering issues during Mind2Web annotation. The three **_test splits (test_task, test_website, test_domain)_** have undergone human verification to confirm element visibility and correct rendering for action prediction.
+
+
+### Data Fields
+Each line in the dataset is an action consisting of screenshot image, HTML text and other fields required for action prediction, for the convenience of inference.
+- "annotation_id" (str): unique id for each task
+- "website" (str): website name
+- "domain" (str): website domain
+- "subdomain" (str): website subdomain
+- "confirmed_task" (str): task description
+- "action_reprs" (list[str]): human readable string representation of the action sequence
+- **"screenshot" (str): path to the webpage screenshot image corresponding to the HTML.**
+- "action_uid" (str): unique id for each action (step)
+- "raw_html" (str): raw html of the page before the action is performed
+- "cleaned_html" (str): cleaned html of the page before the action is performed
+- "operation" (dict): operation to perform
+  - "op" (str): operation type, one of CLICK, TYPE, SELECT
+  - "original_op" (str): original operation type, contain additional HOVER and ENTER that are mapped to CLICK, not used
+  - "value" (str): optional value for the operation, e.g., text to type, option to select
+- "pos_candidates" (list[dict]): ground truth elements. Here we only include positive elements that exist in "cleaned_html" after our preprocessing, so "pos_candidates" might be empty. The original labeled element can always be found in the "raw_html".
+  - "tag" (str): tag of the element
+  - "is_original_target" (bool): whether the element is the original target labeled by the annotator
+  - "is_top_level_target" (bool): whether the element is a top level target find by our algorithm. please see the paper for more details.
+  - "backend_node_id" (str): unique id for the element
+  - "attributes" (str): serialized attributes of the element, use `json.loads` to convert back to dict
+- "neg_candidates" (list[dict]): other candidate elements in the page after preprocessing, has similar structure as "pos_candidates"
+
+
 # Experiments
-
-## Dataset
-The dataset is derived from Mind2Web by pairing each HTML text with the rendered webpage screenshots. 
-The screenshot image data comes from the [Raw Dump with Full Traces and Snapshots](https://github.com/OSU-NLP-Group/Mind2Web?tab=readme-ov-file#raw-dump-with-full-traces-and-snapshots) captured with PlayWright during data annotation.
-
 
 ### Screenshot Generation
 You can also generate screenshot image and query text data from the Mind2Web raw dump. 
