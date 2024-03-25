@@ -12,12 +12,14 @@ import time
 import logging
 import os
 import warnings
+import av
 from dataclasses import dataclass
 from av import VideoFrame
+from RealtimeSTT import AudioToTextRecorder
 
 import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceServer, RTCConfiguration
-from aiortc.contrib.media import MediaPlayer, MediaRecorder
+from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import cv2
 
 import toml
@@ -29,6 +31,9 @@ import toml
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning)
 
+first_chunk = True
+full_sentences = []
+displayed_text = ""
 pcs = set()
 
 @dataclass
@@ -124,6 +129,78 @@ class JanusSession:
                     else:
                         print(data)
 
+async def speech_to_text(track):
+    def add_message_to_queue(type: str, content):
+        message = {
+            "type": type,
+            "content": content
+        }
+        # TODO send back transcription
+        print(message)    
+
+    def text_detected(text):
+        global displayed_text, first_chunk
+
+        if text != displayed_text:
+            first_chunk = False
+            displayed_text = text
+            add_message_to_queue("realtime", text)
+
+            print(f"\r└─ {Fore.CYAN}{text}{Style.RESET_ALL}", end='', flush=True)
+
+    def recording_started():
+        add_message_to_queue("record_start", "")
+
+    def vad_detect_started():
+        add_message_to_queue("vad_start", "")
+
+    def wakeword_detect_started():
+        add_message_to_queue("wakeword_start", "")
+
+    def transcription_started():
+        add_message_to_queue("transcript_start", "")
+
+    # Initialize RealtimeSTT recorder
+    recorder_config = {
+        'use_microphone': False,  # Set use_microphone to False
+        'spinner': False,
+        'model': 'small.en',
+        'language': 'en',
+        'silero_sensitivity': 0.01,
+        'webrtc_sensitivity': 3,
+        'silero_use_onnx': False,
+        'post_speech_silence_duration': 1.2,
+        'min_length_of_recording': 0.2,
+        'min_gap_between_recordings': 0,
+        'enable_realtime_transcription': True,
+        'realtime_processing_pause': 0,
+        'realtime_model_type': 'tiny.en',
+        'on_realtime_transcription_stabilized': text_detected,
+        'on_recording_start' : recording_started,
+        'on_vad_detect_start' : vad_detect_started,
+        'on_wakeword_detection_start' : wakeword_detect_started,
+        'on_transcription_start' : transcription_started,
+    }
+    speech_recorder = AudioToTextRecorder(**recorder_config)
+
+    # Simulated function to get audio frames from the MediaStreamTrack
+    async def get_audio_frames(track):
+        while True:
+            # Read audio frames from the MediaStreamTrack (replace this with actual implementation)
+            audio_frame = await track.recv()  # Assuming track is a MediaStreamTrack instance
+            yield audio_frame
+
+    # Read audio frames and feed them to the RealtimeSTT recorder
+    async for audio_frame in get_audio_frames(track):
+        print('audio chunk!')
+        print(audio_frame.format)
+        print(audio_frame.layout)
+        audio_frame.sample_rate = 16000
+        print(audio_frame.sample_rate)
+        # Convert the frame to raw audio data
+        raw_audio_data = bytearray(audio_frame.planes[0])
+        speech_recorder.feed_audio(raw_audio_data)
+
 async def publish(plugin, player):
     """
     Send video to the room.
@@ -145,7 +222,7 @@ async def publish(plugin, player):
 
     # send offer
     await pc.setLocalDescription(await pc.createOffer())
-    request = {"request": "configure"}
+    request = {"request": "configure", "bitrate": 100000}
     request.update(media)
     response = await plugin.send(
         {
@@ -175,6 +252,7 @@ async def subscribe(session, room, feed, recorder):
         print("Track %s received" % track.kind)
         if track.kind == "audio":
             recorder.addTrack(track)
+            await speech_to_text(track)
 
     # subscribe
     plugin = await session.attach("janus.plugin.videoroom")
@@ -306,7 +384,7 @@ if __name__ == "__main__":
     if args.record_to:
         recorder = MediaRecorder(args.record_to)
     else:
-        recorder = None
+        recorder = MediaBlackhole()
 
     try:
         with open(os.path.join(base_dir, args.config_path) if not os.path.isabs(args.config_path) else args.config_path,

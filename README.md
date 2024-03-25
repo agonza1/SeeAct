@@ -14,8 +14,11 @@
 R-SeeAct (based on the forked SeeAct) is a system for <a href="https://osu-nlp-group.github.io/Mind2Web/">generalist WebRTC agents</a> that autonomously carry out tasks on any given website, 
 with a focus on large multimodal models (LMMs) such as GPT-4V(ision). 
 It consists of three main components: 
+
 (1) A robust codebase that supports running web agents on live websites, and
+
 (2) An innovative framework that utilizes LMMs as generalist web agents.
+
 (3) A [Janus](https://github.com/meetecho/janus-gateway) compatible WebRTC client (based on [Aiortc](https://github.com/aiortc/aiortc)) that can be remotely controlled
 
 ![Demo Video GIF](https://raw.githubusercontent.com/OSU-NLP-Group/SeeAct/gh-pages/static/videos/readme_demo.gif)

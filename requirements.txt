@@ -4,6 +4,8 @@ lxml==4.9.3
 openai==0.28.1
 playwright==1.40.0
 aiortc==1.8.0
+PyAudio==0.2.14
+RealTimeSTT==0.1.11
 aiohttp
 opencv-python
 jsonlines
