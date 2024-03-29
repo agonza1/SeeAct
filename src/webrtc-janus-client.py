@@ -12,7 +12,8 @@ import time
 import logging
 import os
 import warnings
-import av
+import numpy as np
+from scipy.signal import resample
 from dataclasses import dataclass
 from av import VideoFrame
 from RealtimeSTT import AudioToTextRecorder
@@ -23,16 +24,12 @@ from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import cv2
 
 import toml
-# import torch
-# from aioconsole import ainput, aprint
-# from playwright.async_api import async_playwright
 
 # Remove Huggingface internal warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning)
 
 first_chunk = True
-full_sentences = []
 displayed_text = ""
 pcs = set()
 
@@ -138,68 +135,91 @@ async def speech_to_text(track):
         # TODO send back transcription
         print(message)    
 
+    def decode_and_resample(
+            audio_frame,
+            original_sample_rate,
+            target_sample_rate):
+
+        # Convert AudioFrame to NumPy array
+        audio_data = np.array(audio_frame.to_ndarray())
+        # Calculate the number of samples after resampling
+        num_original_samples = len(audio_data)
+        num_target_samples = int(num_original_samples * target_sample_rate /
+                                 original_sample_rate)
+        
+        # Resample the audio
+        resampled_audio = resample(audio_data, num_target_samples)
+        return resampled_audio.astype(np.int16).tobytes()
+    
     def text_detected(text):
         global displayed_text, first_chunk
+        print("Text detected!!")
 
         if text != displayed_text:
             first_chunk = False
             displayed_text = text
             add_message_to_queue("realtime", text)
-
-            print(f"\r└─ {Fore.CYAN}{text}{Style.RESET_ALL}", end='', flush=True)
+            print(f"\r{text}", end='', flush=True)
 
     def recording_started():
         add_message_to_queue("record_start", "")
 
     def vad_detect_started():
-        add_message_to_queue("vad_start", "")
+        add_message_to_queue("voice_activity_start", "")
 
-    def wakeword_detect_started():
-        add_message_to_queue("wakeword_start", "")
-
-    def transcription_started():
-        add_message_to_queue("transcript_start", "")
 
     # Initialize RealtimeSTT recorder
     recorder_config = {
-        'use_microphone': False,  # Set use_microphone to False
         'spinner': False,
+        'use_microphone': False,  # Set use_microphone to False
         'model': 'small.en',
         'language': 'en',
-        'silero_sensitivity': 0.01,
+        'silero_sensitivity': 0.5,
         'webrtc_sensitivity': 3,
         'silero_use_onnx': False,
-        'post_speech_silence_duration': 1.2,
-        'min_length_of_recording': 0.2,
+        'post_speech_silence_duration': 1,
+        'min_length_of_recording': 0,
         'min_gap_between_recordings': 0,
         'enable_realtime_transcription': True,
-        'realtime_processing_pause': 0,
+        'realtime_processing_pause': 0.5,
         'realtime_model_type': 'tiny.en',
         'on_realtime_transcription_stabilized': text_detected,
         'on_recording_start' : recording_started,
         'on_vad_detect_start' : vad_detect_started,
-        'on_wakeword_detection_start' : wakeword_detect_started,
-        'on_transcription_start' : transcription_started,
+        # 'level': logging.DEBUG
     }
     speech_recorder = AudioToTextRecorder(**recorder_config)
-
+    print("AudioToTextRecorder() Initialized")
+    num_frames = 0
+    speech_recorder.start()
+    # recorder_ready.set()
     # Simulated function to get audio frames from the MediaStreamTrack
     async def get_audio_frames(track):
         while True:
             # Read audio frames from the MediaStreamTrack (replace this with actual implementation)
             audio_frame = await track.recv()  # Assuming track is a MediaStreamTrack instance
+            # print("audio frame received")
+            # print(audio_frame)
             yield audio_frame
 
     # Read audio frames and feed them to the RealtimeSTT recorder
     async for audio_frame in get_audio_frames(track):
-        print('audio chunk!')
-        print(audio_frame.format)
-        print(audio_frame.layout)
-        audio_frame.sample_rate = 16000
-        print(audio_frame.sample_rate)
+        # if not recorder_ready.is_set():
+        #         print("Recorder not ready")
+        #         continue
+        # print('audio chunk!')
         # Convert the frame to raw audio data
-        raw_audio_data = bytearray(audio_frame.planes[0])
-        speech_recorder.feed_audio(raw_audio_data)
+        resampled_frame = decode_and_resample(audio_frame, audio_frame.sample_rate, 16000)
+        # print(f"Resampled audio data size: {len(resampled_frame)} bytes")
+        speech_recorder.feed_audio(resampled_frame)
+        # num_frames += 1
+        # if num_frames == 10:
+        #     try:
+        #         num_frames = 0
+        #         speech_recorder.text(add_message_to_queue)
+        #     except Exception as e:
+        #         # Handle specific exception(s) instead of catching all
+        #         print(f"Error: {e}")
 
 async def publish(plugin, player):
     """
@@ -251,9 +271,9 @@ async def subscribe(session, room, feed, recorder):
     async def on_track(track):
         print("Track %s received" % track.kind)
         if track.kind == "audio":
-            recorder.addTrack(track)
             await speech_to_text(track)
-
+            recorder.addTrack(track)
+            
     # subscribe
     plugin = await session.attach("janus.plugin.videoroom")
     response = await plugin.send(
@@ -310,9 +330,10 @@ async def rtc_communication_process(player, recorder, room, session):
             session=session, room=room, feed=publishers[0]["id"], recorder=recorder
         )
 
-    # exchange media for 10 minutes
+    # exchange media for 5 minutes
     print("Exchanging media")
-    await asyncio.sleep(600)
+    await asyncio.sleep(300)
+
 
 def main(config, base_dir, player, recorder, room) -> None:
     # Get Janus config settings
@@ -381,6 +402,7 @@ if __name__ == "__main__":
     player = MediaPlayer('./images/LAM_bot_video.mp4', loop=True, decode=not args.play_without_decoding)
 
     # create media sink
+    # recorder_ready.wait()
     if args.record_to:
         recorder = MediaRecorder(args.record_to)
     else:

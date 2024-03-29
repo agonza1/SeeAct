@@ -2,5 +2,7 @@
 /src/config/demo_mode.toml
 /src/config/online_exp.toml
 /src/data_utils/__pycache__
+/src/images/out.mp3
+/src/realtimesst.log
 .env
 online_results
