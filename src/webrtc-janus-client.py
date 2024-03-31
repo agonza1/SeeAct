@@ -10,6 +10,7 @@ import random
 import string
 import time
 import logging
+import threading
 import os
 import warnings
 import numpy as np
@@ -127,6 +128,7 @@ class JanusSession:
                         print(data)
 
 async def speech_to_text(track):
+    times = 0
     def add_message_to_queue(type: str, content):
         message = {
             "type": type,
@@ -150,10 +152,10 @@ async def speech_to_text(track):
         # Resample the audio
         resampled_audio = resample(audio_data, num_target_samples)
         return resampled_audio.astype(np.int16).tobytes()
-    
+
     def text_detected(text):
         global displayed_text, first_chunk
-        print("Text detected!!")
+        print("Text detected!")
 
         if text != displayed_text:
             first_chunk = False
@@ -172,65 +174,51 @@ async def speech_to_text(track):
     recorder_config = {
         'spinner': False,
         'use_microphone': False,  # Set use_microphone to False
-        'model': 'small.en',
+        'model': 'tiny.en',
         'language': 'en',
-        'silero_sensitivity': 0.5,
-        'webrtc_sensitivity': 3,
+        'silero_sensitivity': 0.4,
+        'webrtc_sensitivity': 2,
         'silero_use_onnx': False,
         'post_speech_silence_duration': 1,
-        'min_length_of_recording': 0,
-        'min_gap_between_recordings': 0,
+        'min_length_of_recording': 0.5,
+        'min_gap_between_recordings': 0.5,
         'enable_realtime_transcription': True,
-        'realtime_processing_pause': 0.5,
+        'realtime_processing_pause': 0.2,
         'realtime_model_type': 'tiny.en',
         'on_realtime_transcription_stabilized': text_detected,
         'on_recording_start' : recording_started,
         'on_vad_detect_start' : vad_detect_started,
         # 'level': logging.DEBUG
     }
+
     speech_recorder = AudioToTextRecorder(**recorder_config)
     print("AudioToTextRecorder() Initialized")
-    num_frames = 0
     speech_recorder.start()
-    # recorder_ready.set()
+    
     # Simulated function to get audio frames from the MediaStreamTrack
     async def get_audio_frames(track):
         while True:
             # Read audio frames from the MediaStreamTrack (replace this with actual implementation)
             audio_frame = await track.recv()  # Assuming track is a MediaStreamTrack instance
-            # print("audio frame received")
-            # print(audio_frame)
             yield audio_frame
 
     # Read audio frames and feed them to the RealtimeSTT recorder
     async for audio_frame in get_audio_frames(track):
-        # if not recorder_ready.is_set():
-        #         print("Recorder not ready")
-        #         continue
-        # print('audio chunk!')
         # Convert the frame to raw audio data
         resampled_frame = decode_and_resample(audio_frame, audio_frame.sample_rate, 16000)
         # print(f"Resampled audio data size: {len(resampled_frame)} bytes")
         speech_recorder.feed_audio(resampled_frame)
-        # num_frames += 1
-        # if num_frames == 10:
-        #     try:
-        #         num_frames = 0
-        #         speech_recorder.text(add_message_to_queue)
-        #     except Exception as e:
-        #         # Handle specific exception(s) instead of catching all
-        #         print(f"Error: {e}")
 
 async def publish(plugin, player):
     """
     Send video to the room.
     """
     pc = RTCPeerConnection(configuration=RTCConfiguration(
-            iceServers=[RTCIceServer("stun:stun.l.google.com:19302")]))
-    pcs.add(pc)
+        iceServers=[RTCIceServer("stun:stun.l.google.com:19302")]))
 
+    pcs.add(pc)
     # configure media
-    media = {"audio": False, "video": True}
+    media = {"audio": True, "video": True}
     if player and player.audio:
         pc.addTrack(player.audio)
         media["audio"] = True
@@ -242,7 +230,7 @@ async def publish(plugin, player):
 
     # send offer
     await pc.setLocalDescription(await pc.createOffer())
-    request = {"request": "configure", "bitrate": 100000}
+    request = {"request": "publish", "display": "bot" ,"bitrate": 300000, "audiocodec": "pcmu"}
     request.update(media)
     response = await plugin.send(
         {
@@ -402,7 +390,6 @@ if __name__ == "__main__":
     player = MediaPlayer('./images/LAM_bot_video.mp4', loop=True, decode=not args.play_without_decoding)
 
     # create media sink
-    # recorder_ready.wait()
     if args.record_to:
         recorder = MediaRecorder(args.record_to)
     else:
