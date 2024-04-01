@@ -441,7 +441,7 @@ if __name__ == "__main__":
     config = None
 
      # create media source
-    player = MediaPlayer('./images/LAM_bot_video2.mp4', decode=not args.play_without_decoding)
+    player = MediaPlayer('./images/LAM_bot_video.mp4', decode=not args.play_without_decoding)
 
     # create media sink
     if args.record_to:
