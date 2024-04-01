@@ -10,20 +10,16 @@ import random
 import string
 import time
 import logging
-import threading
 import os
 import warnings
 import numpy as np
 from scipy.signal import resample
 from dataclasses import dataclass
-from av import VideoFrame
 from RealtimeSTT import AudioToTextRecorder
 
 import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceServer, RTCConfiguration
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
-import cv2
-
 import toml
 
 # Remove Huggingface internal warnings
