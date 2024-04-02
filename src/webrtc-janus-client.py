@@ -300,7 +300,6 @@ async def subscribe(session, room, feed, recorder):
         print("Track %s received" % track.kind)
         if track.kind == "audio":
             audio_track_process = AudioTrackProcessor(track)
-            recorder.addTrack(track)
 
     pc.createDataChannel("JanusDataChannel")
     @pc.on("datachannel")
@@ -313,6 +312,7 @@ async def subscribe(session, room, feed, recorder):
             print(channel, "<", message)
             if isinstance(message, str) and message.startswith("start"):
                 await audio_track_process.start_speech_processing()
+                recorder.addTrack(audio_track_process.track)
             elif isinstance(message, str) and message.startswith("stop"):
                 await audio_track_process.stop_speech_processing()
 
