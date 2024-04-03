@@ -22,10 +22,6 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, R
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import toml
 
-# Remove Huggingface internal warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-warnings.filterwarnings("ignore", category=UserWarning)
-
 time_start = None
 first_chunk = True
 displayed_text = ""
@@ -178,27 +174,22 @@ class AudioTrackProcessor:
         def recording_started():
             add_message_to_queue("record_start", "")
 
-        def vad_detect_started():
-            add_message_to_queue("voice_activity_start", "")
-
         # Initialize RealtimeSTT recorder
         recorder_config = {
             'spinner': False,
-            'use_microphone': False,  # Set use_microphone to False
-            'model': 'tiny.en',
+            'use_microphone': False,
+            'model': 'base',
             'language': 'en',
             'silero_sensitivity': 0.4,
             'webrtc_sensitivity': 2,
-            'silero_use_onnx': False,
-            'post_speech_silence_duration': 1,
-            'min_length_of_recording': 0.5,
-            'min_gap_between_recordings': 0.5,
+            'post_speech_silence_duration': 0.7,
+            'min_length_of_recording': 0.2,
+            'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
-            'realtime_processing_pause': 0.2,
+            'realtime_processing_pause': 0.1,
             'realtime_model_type': 'tiny.en',
             'on_realtime_transcription_stabilized': text_detected,
-            'on_recording_start' : recording_started,
-            'on_vad_detect_start' : vad_detect_started,
+            'on_recording_start': recording_started
             # 'level': logging.DEBUG
         }
 
