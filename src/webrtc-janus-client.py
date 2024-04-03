@@ -1,17 +1,14 @@
 """
-TBC
+This script leverages aiortc and RealtimeSTT (based on fast-whisper) to connect to a Janus WebRTC Media Server and be able to capture audio and relay commands that trigger actions during a video call
 """
 
 import argparse
 import asyncio
-import datetime
-import json
 import random
 import string
 import time
 import logging
 import os
-import warnings
 import numpy as np
 from scipy.signal import resample
 from dataclasses import dataclass
