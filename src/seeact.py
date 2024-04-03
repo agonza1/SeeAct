@@ -209,7 +209,7 @@ async def main(config, base_dir) -> None:
             task_input = default_task
         task_dict["confirmed_task"] = task_input
         website_input = await ainput(
-            f"Please input the complete ulr of the starting website, and press Enter. The URL must be complete (for example, including http), to ensure the browser can successfully load the webpage. \nOr directly press Enter to use the default website: {default_website}\nWebsite: ")
+            f"Please input the complete URL of the starting website, and press Enter. The URL must be complete (for example, including http), to ensure the browser can successfully load the webpage. \nOr directly press Enter to use the default website: {default_website}\nWebsite: ")
         if not website_input:
             website_input = default_website
         task_dict["website"] = website_input
@@ -347,7 +347,7 @@ async def main(config, base_dir) -> None:
                     # if monitor:
                     #     logger.info("Wait for human inspection. Directly press Enter to exit")
                     #     monitor_input = await ainput()
-                    logger.info("Close brownser context")
+                    logger.info("Close browser context")
                     logger.removeHandler(log_fh)
                     logger.removeHandler(console_handler)
 
@@ -861,7 +861,7 @@ async def main(config, base_dir) -> None:
                         logger.info("Wait for human inspection. Directly press Enter to exit")
                         monitor_input = await ainput()
 
-                    logger.info("Close brownser context")
+                    logger.info("Close browser context")
                     logger.removeHandler(log_fh)
                     logger.removeHandler(console_handler)
                     close_context = session_control.context
