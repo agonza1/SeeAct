@@ -102,26 +102,31 @@ class OpenaiEngine(Engine):
         prompt2 = prompt[2]
 
         if turn_number == 0:
-            base64_image = encode_image(image_path)
-            # Assume one turn dialogue
-            prompt1_input = [
-                {"role": "system", "content": [{"type": "text", "text": prompt0}]},
-                {"role": "user",
-                 "content": [{"type": "text", "text": prompt1}, {"type": "image_url", "image_url": {"url":
-                                                                                                        f"data:image/jpeg;base64,{base64_image}",
-                                                                                                    "detail": "high"},
-                                                                 }]},
-            ]
-            response1 = openai.ChatCompletion.create(
-                model=model if model else self.model,
-                messages=prompt1_input,
-                max_tokens=max_new_tokens if max_new_tokens else 4096,
-                temperature=temperature if temperature else self.temperature,
-                **kwargs,
-            )
-            answer1 = [choice["message"]["content"] for choice in response1["choices"]][0]
+            try:
+                base64_image = encode_image(image_path)
+                # Assume one turn dialogue
+                prompt1_input = [
+                    {"role": "system", "content": [{"type": "text", "text": prompt0}]},
+                    {"role": "user",
+                    "content": [{"type": "text", "text": prompt1}, {"type": "image_url", "image_url": {"url":
+                                                                                                            f"data:image/jpeg;base64,{base64_image}",
+                                                                                                        "detail": "high"},
+                                                                    }]},
+                ]
+                response1 = openai.ChatCompletion.create(
+                    model=model if model else self.model,
+                    messages=prompt1_input,
+                    max_tokens=max_new_tokens if max_new_tokens else 4096,
+                    temperature=temperature if temperature else self.temperature,
+                    **kwargs,
+                )
+                answer1 = [choice["message"]["content"] for choice in response1["choices"]][0]
+                return answer1
+            
+            except Exception as ex:
+                print(f"Error: {ex}")
+                raise APIError("An error occurred prompting OpenAI")
 
-            return answer1
         elif turn_number == 1:
             base64_image = encode_image(image_path)
             prompt2_input = [
