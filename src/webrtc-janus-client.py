@@ -9,10 +9,12 @@ import string
 import time
 import logging
 import os
+from datetime import datetime, timedelta
 import numpy as np
 from scipy.signal import resample
 from dataclasses import dataclass
 from RealtimeSTT import AudioToTextRecorder
+from seeactRunningProcess import SeeactRunningProcess
 
 import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceServer, RTCConfiguration
@@ -23,6 +25,7 @@ time_start = None
 first_chunk = True
 displayed_text = ""
 audio_track_process = None
+seeact_process = SeeactRunningProcess("python seeact.py -c config/remote_mode.toml")
 pcs = set()
 
 @dataclass
@@ -35,6 +38,15 @@ class SessionControl:
     browser = None
 
 session_control = SessionControl()
+
+def run_seeact_process():
+    # Seeact process line receive
+    def line_received(line):
+        print("SeeAct LAM:", line)
+
+    seeact_process.set_callback(line_received)
+    seeact_process.set_error_callback(line_received)
+    seeact_process.run()
 
 def transaction_id():
     return "".join(random.choice(string.ascii_letters) for x in range(12))
@@ -132,6 +144,7 @@ class AudioTrackProcessor:
         self.start_requested = False
         self.track = track
         self.speech_recorder = None
+        self.last_text_detected_time = None
 
     async def speech_to_text(self):
         def add_message_to_queue(type: str, content):
@@ -167,6 +180,7 @@ class AudioTrackProcessor:
                 displayed_text = text
                 add_message_to_queue("realtime", text)
                 print(f"\r{text}", end='', flush=True)
+                self.last_text_detected_time = datetime.now()
 
         def recording_started():
             add_message_to_queue("record_start", "")
@@ -299,10 +313,13 @@ async def subscribe(session, room, feed, recorder):
             nonlocal audio_track_process
             print(channel, "<", message)
             if isinstance(message, str) and message.startswith("start"):
+                run_seeact_process()
                 await audio_track_process.start_speech_processing()
                 recorder.addTrack(audio_track_process.track)
             elif isinstance(message, str) and message.startswith("stop"):
+                seeact_process.stop_process()
                 await audio_track_process.stop_speech_processing()
+                await recorder.stop()
 
     # subscribe
     plugin = await session.attach("janus.plugin.videoroom")
