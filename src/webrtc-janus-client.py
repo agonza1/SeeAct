@@ -14,6 +14,8 @@ from scipy.signal import resample
 from dataclasses import dataclass
 from RealtimeSTT import AudioToTextRecorder
 
+from seeactRunningProcess import SeeactRunningProcess
+
 import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceServer, RTCConfiguration
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
@@ -35,6 +37,16 @@ class SessionControl:
     browser = None
 
 session_control = SessionControl()
+
+def run_seeact_process():
+    # Seeact process line receive
+    def line_received(line):
+        print("SeeAct LAM:", line)
+
+    process = SeeactRunningProcess("python seeact.py -c config/remote_mode.toml")
+    process.set_callback(line_received)
+    process.run()
+    return process
 
 def transaction_id():
     return "".join(random.choice(string.ascii_letters) for x in range(12))
@@ -301,8 +313,11 @@ async def subscribe(session, room, feed, recorder):
             if isinstance(message, str) and message.startswith("start"):
                 await audio_track_process.start_speech_processing()
                 recorder.addTrack(audio_track_process.track)
+                seeact_process = run_seeact_process()
             elif isinstance(message, str) and message.startswith("stop"):
                 await audio_track_process.stop_speech_processing()
+                recorder.stop()
+                seeact_process.stop_process()
 
     # subscribe
     plugin = await session.attach("janus.plugin.videoroom")
