@@ -14,7 +14,6 @@ import numpy as np
 from scipy.signal import resample
 from dataclasses import dataclass
 from RealtimeSTT import AudioToTextRecorder
-
 from seeactRunningProcess import SeeactRunningProcess
 
 import aiohttp
