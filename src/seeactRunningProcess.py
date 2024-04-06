@@ -10,11 +10,13 @@ class SeeactRunningProcess:
         self.process = None
         self.running = False
         self.callback = None
+        self.error_callback = None
         self.process_thread = None
 
     def start_process(self):
         self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+        fcntl.fcntl(self.process.stderr.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
         self.running = True
 
     def stop_process(self):
@@ -26,17 +28,29 @@ class SeeactRunningProcess:
     def set_callback(self, callback):
         self.callback = callback
 
+    def set_error_callback(self, error_callback):
+        self.error_callback = error_callback
+
     def read_output(self):
         while self.running:
             try:
                 line = self.process.stdout.readline().decode().strip()
+                stderr_line = self.process.stderr.readline().decode().strip()
+                
                 if line:
                     print(line)  # Print the line
                     if self.callback:
                         self.callback(line)  # Call the callback function
-                time.sleep(0.5)  # Wait for 500ms
-            except:
-                pass  # Ignore non-blocking read errors
+
+                if stderr_line:
+                    if self.error_callback:
+                        self.error_callback(stderr_line)
+
+                time.sleep(0.1)  # Wait for 100ms
+
+            except Exception as e:
+                print(f"Error reading output: {e}")
+                pass  # Exit loop if error
 
     def run(self):
         self.start_process()
