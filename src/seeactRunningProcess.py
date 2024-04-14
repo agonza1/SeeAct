@@ -46,7 +46,7 @@ class SeeactRunningProcess:
                     if self.error_callback:
                         self.error_callback(stderr_line)
 
-                time.sleep(0.1)  # Wait for 100ms
+                time.sleep(0.3)  # Wait for 300ms
 
             except Exception as e:
                 print(f"Error reading output: {e}")

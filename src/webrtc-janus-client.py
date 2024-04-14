@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import random
 import string
+import json
 import time
 import logging
 import os
@@ -21,6 +22,8 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, R
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import toml
 
+global channel
+channel = None
 time_start = None
 first_chunk = True
 displayed_text = ""
@@ -40,9 +43,15 @@ class SessionControl:
 session_control = SessionControl()
 
 def run_seeact_process():
-    # Seeact process line receive
+    # Seeact process line receive and forward via data channels
     def line_received(line):
+        global channel
         print("SeeAct LAM:", line)
+        try:
+            message_json = json.dumps(line)
+            channel_send(channel, message_json)
+        except:
+            print("Error forwarding seeact logs via data channels")
 
     seeact_process.set_callback(line_received)
     seeact_process.set_error_callback(line_received)
@@ -148,12 +157,14 @@ class AudioTrackProcessor:
 
     async def speech_to_text(self):
         def add_message_to_queue(type: str, content):
+            global channel
             message = {
                 "type": type,
                 "content": content
             }
-            # TODO send back transcription
-            print(message)    
+            print(message)
+            message_json = json.dumps(message)
+            channel_send(channel, message_json)
 
         def decode_and_resample(
                 audio_frame,
@@ -194,11 +205,11 @@ class AudioTrackProcessor:
             'silero_sensitivity': 0.4,
             'webrtc_sensitivity': 2,
             'post_speech_silence_duration': 0.7,
-            'min_length_of_recording': 0.2,
+            'min_length_of_recording': 0.3,
             'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
             'realtime_processing_pause': 0.1,
-            'realtime_model_type': 'tiny.en',
+            'realtime_model_type': 'base.en',
             'on_realtime_transcription_stabilized': text_detected,
             'on_recording_start': recording_started
             # 'level': logging.DEBUG
@@ -253,17 +264,19 @@ async def publish(plugin, player):
     else:
         pc.addTrack(VideoStreamTrack())
 
+    global channel
     channel = pc.createDataChannel("JanusDataChannel")
     print(channel, "-", "created by local party")
 
-    # async def send_pings():
+    # async def send_data():
     #     while True:
-    #         channel_send(channel, "ping %d" % current_stamp())
+    #         stdout_data = await process.stdout.readline()
+    #         channel_send(channel, f"Output {i} %d",current_stamp())
     #         await asyncio.sleep(3) #every 3s
 
     # @channel.on("open")
     # def on_open():
-    #     asyncio.ensure_future(send_pings())
+    #     asyncio.ensure_future(send_data())
 
     @channel.on("message")
     def on_message(message):
