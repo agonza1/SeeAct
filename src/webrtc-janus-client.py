@@ -194,7 +194,7 @@ class AudioTrackProcessor:
                 self.last_text_detected_time = datetime.now()
 
         def recording_started():
-            add_message_to_queue("record_start", "")
+            add_message_to_queue("record_start", "") 
 
         # Initialize RealtimeSTT recorder
         recorder_config = {
@@ -208,10 +208,10 @@ class AudioTrackProcessor:
             'min_length_of_recording': 0.3,
             'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
-            'realtime_processing_pause': 0.1,
+            'realtime_processing_pause': 0.3,
             'realtime_model_type': 'base.en',
+            'on_recording_start': recording_started,
             'on_realtime_transcription_stabilized': text_detected,
-            'on_recording_start': recording_started
             # 'level': logging.DEBUG
         }
 
@@ -228,7 +228,10 @@ class AudioTrackProcessor:
                 resampled_frame = decode_and_resample(audio_frame, audio_frame.sample_rate, 16000)
                 # print(f"Resampled audio data size: {len(resampled_frame)} bytes")
                 self.speech_recorder.feed_audio(resampled_frame)
-
+            full_sentence = self.speech_recorder.text()
+            add_message_to_queue('fullSentence', full_sentence)
+            print(f"\rSentence: {full_sentence}")
+            
         # Start the audio processing loop
         await get_audio_frames(self.track)
 
