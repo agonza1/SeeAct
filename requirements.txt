@@ -5,7 +5,7 @@ openai==0.28.1
 playwright==1.40.0
 aiortc==1.8.0
 PyAudio==0.2.14
-RealTimeSTT==0.1.13
+RealTimeSTT==0.1.15
 aiohttp
 opencv-python
 jsonlines
