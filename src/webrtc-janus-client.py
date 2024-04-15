@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import random
 import string
+import json
 import time
 import logging
 import os
@@ -15,18 +16,22 @@ from scipy.signal import resample
 from dataclasses import dataclass
 from RealtimeSTT import AudioToTextRecorder
 from seeactRunningProcess import SeeactRunningProcess
+from store import Store
 
 import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, RTCIceServer, RTCConfiguration
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import toml
 
+global channel
+channel = None
 time_start = None
 first_chunk = True
 displayed_text = ""
 audio_track_process = None
 seeact_process = SeeactRunningProcess("python seeact.py -c config/remote_mode.toml")
 pcs = set()
+store = Store("../data/online_tasks/sample_task.json")
 
 @dataclass
 class SessionControl:
@@ -40,9 +45,12 @@ class SessionControl:
 session_control = SessionControl()
 
 def run_seeact_process():
-    # Seeact process line receive
+    # Seeact process line receive and forward via data channels
     def line_received(line):
+        global channel
         print("SeeAct LAM:", line)
+        message_json = json.dumps(line)
+        channel_send(channel, message_json)
 
     seeact_process.set_callback(line_received)
     seeact_process.set_error_callback(line_received)
@@ -146,15 +154,16 @@ class AudioTrackProcessor:
         self.speech_recorder = None
         self.last_text_detected_time = None
 
-    async def speech_to_text(self):
-        def add_message_to_queue(type: str, content):
-            message = {
-                "type": type,
-                "content": content
-            }
-            # TODO send back transcription
-            print(message)    
+    def add_message_to_queue(self, type: str, content):
+        global channel
+        message = {
+            "type": type,
+            "content": content
+        }
+        message_json = json.dumps(message)
+        channel_send(channel, message_json)
 
+    async def speech_to_text(self):
         def decode_and_resample(
                 audio_frame,
                 original_sample_rate,
@@ -178,12 +187,12 @@ class AudioTrackProcessor:
             if text != displayed_text:
                 first_chunk = False
                 displayed_text = text
-                add_message_to_queue("realtime", text)
+                self.add_message_to_queue("realtime", text)
                 print(f"\r{text}", end='', flush=True)
                 self.last_text_detected_time = datetime.now()
 
         def recording_started():
-            add_message_to_queue("record_start", "") 
+            self.add_message_to_queue("record_start", "") 
 
         # Initialize RealtimeSTT recorder
         recorder_config = {
@@ -192,9 +201,9 @@ class AudioTrackProcessor:
             'model': 'base',
             'language': 'en',
             'silero_sensitivity': 0.4,
-            'webrtc_sensitivity': 2,
+            'webrtc_sensitivity': 3,
             'post_speech_silence_duration': 0.7,
-            'min_length_of_recording': 0.2,
+            'min_length_of_recording': 0.3,
             'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
             'realtime_processing_pause': 0.3,
@@ -217,9 +226,6 @@ class AudioTrackProcessor:
                 resampled_frame = decode_and_resample(audio_frame, audio_frame.sample_rate, 16000)
                 # print(f"Resampled audio data size: {len(resampled_frame)} bytes")
                 self.speech_recorder.feed_audio(resampled_frame)
-            full_sentence = self.speech_recorder.text()
-            add_message_to_queue('fullSentence', full_sentence)
-            print(f"\rSentence: {full_sentence}")
             
         # Start the audio processing loop
         await get_audio_frames(self.track)
@@ -232,10 +238,19 @@ class AudioTrackProcessor:
         self.start_requested = False
         if self.speech_recorder:
             self.speech_recorder.stop()
+        full_sentence = self.speech_recorder.text()
+        self.add_message_to_queue('fullSentence', full_sentence)
+        store.add_task(full_sentence, "https://google.com")
+        print(f"\rSentence: {full_sentence}")
+        self.add_message_to_queue('Info', 'Started action process...')
 
 def channel_send(channel, message):
     print(channel, ">", message)
-    channel.send(message)
+    try:
+        channel.send(message)
+    except Exception as e:
+        print("Error sending data through data channels")
+        print(e)
 
 async def publish(plugin, player):
     """
@@ -256,17 +271,19 @@ async def publish(plugin, player):
     else:
         pc.addTrack(VideoStreamTrack())
 
+    global channel
     channel = pc.createDataChannel("JanusDataChannel")
     print(channel, "-", "created by local party")
 
-    # async def send_pings():
+    # async def send_data():
     #     while True:
-    #         channel_send(channel, "ping %d" % current_stamp())
+    #         stdout_data = await process.stdout.readline()
+    #         channel_send(channel, f"Output {i} %d",current_stamp())
     #         await asyncio.sleep(3) #every 3s
 
     # @channel.on("open")
     # def on_open():
-    #     asyncio.ensure_future(send_pings())
+    #     asyncio.ensure_future(send_data())
 
     @channel.on("message")
     def on_message(message):
@@ -316,13 +333,13 @@ async def subscribe(session, room, feed, recorder):
             nonlocal audio_track_process
             print(channel, "<", message)
             if isinstance(message, str) and message.startswith("start"):
-                run_seeact_process()
+                # seeact_process.stop_process()
                 await audio_track_process.start_speech_processing()
                 recorder.addTrack(audio_track_process.track)
             elif isinstance(message, str) and message.startswith("stop"):
-                seeact_process.stop_process()
                 await audio_track_process.stop_speech_processing()
                 await recorder.stop()
+                run_seeact_process()
 
     # subscribe
     plugin = await session.attach("janus.plugin.videoroom")
