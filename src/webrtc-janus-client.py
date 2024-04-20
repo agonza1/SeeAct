@@ -23,7 +23,6 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack, R
 from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaBlackhole
 import toml
 
-global channel
 channel = None
 time_start = None
 first_chunk = True
@@ -32,6 +31,7 @@ audio_track_process = None
 seeact_process = SeeactRunningProcess("python seeact.py -c config/remote_mode.toml")
 pcs = set()
 store = Store("../data/online_tasks/sample_task.json")
+stdout = []
 
 @dataclass
 class SessionControl:
@@ -47,14 +47,16 @@ session_control = SessionControl()
 def run_seeact_process():
     # Seeact process line receive and forward via data channels
     def line_received(line):
-        global channel
+        global stdout
         print("SeeAct LAM:", line)
-        message_json = json.dumps(line)
-        channel_send(channel, message_json)
+        stdout.append(line)
 
     seeact_process.set_callback(line_received)
     seeact_process.set_error_callback(line_received)
-    seeact_process.run()
+    try:
+        seeact_process.run()
+    except Exception as e:
+        logging.error(f"Error running SeeAct process: {e}")
 
 def transaction_id():
     return "".join(random.choice(string.ascii_letters) for x in range(12))
@@ -155,13 +157,13 @@ class AudioTrackProcessor:
         self.last_text_detected_time = None
 
     def add_message_to_queue(self, type: str, content):
-        global channel
+        global stdout
         message = {
             "type": type,
             "content": content
         }
         message_json = json.dumps(message)
-        channel_send(channel, message_json)
+        stdout.append(message_json)
 
     async def speech_to_text(self):
         def decode_and_resample(
@@ -271,19 +273,26 @@ async def publish(plugin, player):
     else:
         pc.addTrack(VideoStreamTrack())
 
-    global channel
     channel = pc.createDataChannel("JanusDataChannel")
     print(channel, "-", "created by local party")
 
-    # async def send_data():
-    #     while True:
-    #         stdout_data = await process.stdout.readline()
-    #         channel_send(channel, f"Output {i} %d",current_stamp())
-    #         await asyncio.sleep(3) #every 3s
+    async def send_data():
+        sent_text = ""
+        while True:
+            # Check if there is new data to send
+            if stdout and stdout[-1] != sent_text:
+                # Update the sent_text to the last line of stdout
+                sent_text = stdout[-1]
+                # Send all lines in stdout at once
+                channel_send(channel, "\n".join(stdout))
+                # Clear the stdout after sending
+                stdout.clear()
+            # Wait for 3 seconds before the next check
+            await asyncio.sleep(3)  # every 3s
 
-    # @channel.on("open")
-    # def on_open():
-    #     asyncio.ensure_future(send_data())
+    @channel.on("open")
+    def on_open():
+        asyncio.ensure_future(send_data())
 
     @channel.on("message")
     def on_message(message):
