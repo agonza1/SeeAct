@@ -10,21 +10,21 @@ overwrite = false # Enable to overwrite existing results. Disable to skip tasks 
 top_k = 25  # Number of top element candidates to consider if a ranker is used.
 fixed_choice_batch_size = 17 # Fixed number of options for each multiple-choice question.
 # Ensure a manageable number to prevent Playwright crashes during screenshot capture due to large image sizes.
-dynamic_choice_batch_size=1600 # Dynamic batch size based on webpage height. Overrides fixed_choice_batch_size if positive.
+dynamic_choice_batch_size=160 # Dynamic batch size based on webpage height. Overrides fixed_choice_batch_size if positive.
 max_continuous_no_op = 2 # Maximum number of consecutive ineffective operations allowed.
 max_op = 15 # Maximum number of operations to attempt.
 highlight = false # If true, highlights elements during processing. Included in screenshots.
 monitor = true # Monitors each step. Pausing after each operation for safety, recommended to be always true. You should always monitor agents' behavior even if is set as false.
 dev_mode=false # Developer mode toggle.
 # storage_state="" # Path to a saved cookie file, if any.
-ranker_path = "../model/deberta-v3-base" # Path to the ranking model. Comment out to disable ranking and treat all elements as candidates.
+# ranker_path = "../model/deberta-v3-base" # Path to the ranking model. Comment out to disable ranking and treat all elements as candidates.
 # Pretrained model: https://huggingface.co/osunlp/MindAct_CandidateGeneration_deberta-v3-base
 
 [openai]
 api_key = "Your API Key Here" # OpenAI API key for GPT-4 access (env var can be used instead).
 # You can find your API key at https://platform.openai.com/account/api-keys.
 rate_limit = 30 # Rate limit (minutes) for API calls (-1 for no limit).
-model = "gpt-4-vision-preview" # Model name, indicating the use of GPT-4 with vision capabilities.
+model = "gpt-4-turbo" # Model name, indicating the use of GPT-4 with vision capabilities.
 temperature = 0 # Temperature setting for GPT's responses, controlling randomness.
 
 [oss_model]

@@ -128,7 +128,7 @@ ignore_args = [
 async def normal_launch_async(playwright: Playwright,trace_dir=None):
     browser = await playwright.chromium.launch(
         traces_dir=None,
-        headless=True,
+        headless=False,
         args=[
             "--disable-blink-features=AutomationControlled",
         ],
@@ -140,7 +140,7 @@ async def normal_launch_async(playwright: Playwright,trace_dir=None):
 
 def normal_launch(playwright: Playwright):
     browser = playwright.chromium.launch(
-        headless=True,
+        headless=False,
         args=['--incognito',
               "--disable-blink-features=AutomationControlled",
               ],
@@ -195,7 +195,7 @@ def normal_new_context(
 def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
     context = playwright.chromium.launch_persistent_context(
         user_data_dir=user_data_dir,
-        headless=True,
+        headless=False,
         args=["--no-default-browser-check",
               "--no_sandbox",
               "--disable-blink-features=AutomationControlled",
@@ -204,7 +204,7 @@ def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
         user_agent="Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
         viewport={"width": 1280, "height": 720},
         bypass_csp=True,
-        slow_mo=1000,
+        #slow_mo=1000,
         chromium_sandbox=True,
         channel="chrome-dev"
     )
@@ -214,7 +214,7 @@ def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
 async def persistent_launch_async(playwright: Playwright, user_data_dir: str = "", record_video_dir="video"):
     context = await playwright.chromium.launch_persistent_context(
         user_data_dir=user_data_dir,
-        headless=True,
+        headless=False,
         args=[
             "--disable-blink-features=AutomationControlled",
         ],

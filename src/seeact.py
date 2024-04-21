@@ -26,6 +26,7 @@ import logging
 import os
 import warnings
 from dataclasses import dataclass
+import time
 
 import toml
 import torch
@@ -460,6 +461,8 @@ async def main(config, base_dir) -> None:
                     candidate_ids = all_candidate_ids[multichoice_i:multichoice_i + step_length]
                     choices = format_choices(elements, candidate_ids, confirmed_task, taken_actions)
                     query_count += 1
+
+                    start_time = time.time()
                     # Format prompts for LLM inference
                     prompt = generate_prompt(task=confirmed_task, previous=taken_actions, choices=choices,
                                              experiment_split="SeeAct")
@@ -468,6 +471,9 @@ async def main(config, base_dir) -> None:
                             logger.info(prompt_i)
 
                     output0 = generation_model.generate(prompt=prompt, image_path=input_image_path, turn_number=0)
+
+                    operation_1_time = time.time() - start_time
+                    logger.info(f"First GPT Vision operation completed in {operation_1_time:.2f} seconds")
 
                     terminal_width = 10
                     logger.info("-" * terminal_width)
@@ -489,8 +495,13 @@ async def main(config, base_dir) -> None:
                         logger.info(line)
                     # logger.info(choice_text)
 
+                    start_time = time.time()
+
                     output = generation_model.generate(prompt=prompt, image_path=input_image_path, turn_number=1,
                                                        ouput__0=output0)
+                    
+                    operation_2_time = time.time() - start_time
+                    logger.info(f"Second step GPT Vision operation completed in {operation_2_time:.2f} seconds")
 
                     terminal_width = 10
                     logger.info("-" * terminal_width)
@@ -560,6 +571,7 @@ async def main(config, base_dir) -> None:
                     target_element = []
 
                 try:
+                    start_time = time.time()
                     if monitor_signal == 'exit':
                         raise Exception("human supervisor manually made it exit.")
                     if no_op_count >= max_continuous_no_op:
@@ -825,6 +837,8 @@ async def main(config, base_dir) -> None:
                         logger.info("-" * 10)
                     try:
                         await session_control.active_page.wait_for_load_state('load')
+                        operation_3_time = time.time() - start_time
+                        logger.info(f"Playwright action completed in {operation_3_time:.2f} seconds")
                     except Exception as e:
                         if dev_mode:
                             logger.info(e)

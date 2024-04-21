@@ -209,7 +209,7 @@ class AudioTrackProcessor:
             'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
             'realtime_processing_pause': 0.3,
-            'realtime_model_type': 'base.en',
+            'realtime_model_type': 'tiny.en',
             'on_recording_start': recording_started,
             'on_realtime_transcription_stabilized': text_detected,
             # 'level': logging.DEBUG
@@ -237,12 +237,20 @@ class AudioTrackProcessor:
         await self.speech_to_text()
 
     async def stop_speech_processing(self):
+
+        def extract_task(full_sentence):
+            # Find the index of the last occurrence of 'bot' in the string
+            last_bot_index = full_sentence.rfind('bot')
+            if last_bot_index == -1:
+                return full_sentence
+            return full_sentence[last_bot_index + 3:].strip()
+
         self.start_requested = False
         if self.speech_recorder:
             self.speech_recorder.stop()
         full_sentence = self.speech_recorder.text()
         self.add_message_to_queue('fullSentence', full_sentence)
-        store.add_task(full_sentence, "https://google.com")
+        store.add_task(extract_task(full_sentence), "https://google.com")
         print(f"\rSentence: {full_sentence}")
         self.add_message_to_queue('Info', 'Started action process...')
 
