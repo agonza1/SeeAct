@@ -275,7 +275,7 @@ async def main(config, base_dir) -> None:
             except Exception as e:
                 logger.info("Failed to fully load the webpage before timeout")
                 logger.info(e)
-            await asyncio.sleep(3)
+            # await asyncio.sleep(3)
 
             taken_actions = []
             complete_flag = False

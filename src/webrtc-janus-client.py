@@ -150,9 +150,9 @@ class JanusSession:
                         print(data)
 
 class AudioTrackProcessor:
-    def __init__(self, track):
+    def __init__(self):
         self.start_requested = False
-        self.track = track
+        self.track = None
         self.speech_recorder = None
         self.last_text_detected_time = None
 
@@ -209,7 +209,7 @@ class AudioTrackProcessor:
             'min_gap_between_recordings': 0.1,
             'enable_realtime_transcription': True,
             'realtime_processing_pause': 0.3,
-            'realtime_model_type': 'tiny.en',
+            'realtime_model_type': 'base.en',
             'on_recording_start': recording_started,
             'on_realtime_transcription_stabilized': text_detected,
             # 'level': logging.DEBUG
@@ -232,17 +232,20 @@ class AudioTrackProcessor:
         # Start the audio processing loop
         await get_audio_frames(self.track)
 
-    async def start_speech_processing(self):
+    async def start_speech_processing(self, audio_track):
         self.start_requested = True
+        self.track = audio_track
         await self.speech_to_text()
 
     async def stop_speech_processing(self):
 
         def extract_task(full_sentence):
-            # Find the index of the last occurrence of 'bot' in the string
-            last_bot_index = full_sentence.rfind('bot')
+            # Find the index of the last occurrence of 'bot' or 'but' in the string
+            last_bot_index = full_sentence.lower().rfind('bot')
             if last_bot_index == -1:
-                return full_sentence
+                last_bot_index = full_sentence.lower().rfind('but')
+                if last_bot_index == -1:
+                    return full_sentence
             return full_sentence[last_bot_index + 3:].strip()
 
         self.start_requested = False
@@ -250,7 +253,7 @@ class AudioTrackProcessor:
             self.speech_recorder.stop()
         full_sentence = self.speech_recorder.text()
         self.add_message_to_queue('fullSentence', full_sentence)
-        store.add_task(extract_task(full_sentence), "https://google.com")
+        store.add_task(extract_task(full_sentence), "https://www.aa.com/homePage.do?locale=en_US")
         print(f"\rSentence: {full_sentence}")
         self.add_message_to_queue('Info', 'Started action process...')
 
@@ -332,13 +335,17 @@ async def subscribe(session, room, feed, recorder):
     pc = RTCPeerConnection()
     pcs.add(pc)
     audio_track_process = None
+    audio_track = None
 
     @pc.on("track")
-    def on_track(track):
+    async def on_track(track):
         nonlocal audio_track_process
+        nonlocal audio_track
         print("Track %s received" % track.kind)
         if track.kind == "audio":
-            audio_track_process = AudioTrackProcessor(track)
+            audio_track = track
+            recorder.addTrack(audio_track)
+            await recorder.start()
 
     pc.createDataChannel("JanusDataChannel")
     @pc.on("datachannel")
@@ -348,14 +355,15 @@ async def subscribe(session, room, feed, recorder):
         @channel.on("message")
         async def on_message(message):
             nonlocal audio_track_process
+            nonlocal audio_track
             print(channel, "<", message)
             if isinstance(message, str) and message.startswith("start"):
                 # seeact_process.stop_process()
-                await audio_track_process.start_speech_processing()
-                recorder.addTrack(audio_track_process.track)
+                await recorder.stop()
+                await audio_track_process.start_speech_processing(audio_track)
             elif isinstance(message, str) and message.startswith("stop"):
                 await audio_track_process.stop_speech_processing()
-                await recorder.stop()
+                await recorder.start()
                 run_seeact_process()
 
     # subscribe
@@ -383,8 +391,7 @@ async def subscribe(session, room, feed, recorder):
             },
         }
     )
-    await recorder.start()
-
+    audio_track_process = AudioTrackProcessor()
 
 async def rtc_communication_process(player, recorder, room, session):
     await session.create()
