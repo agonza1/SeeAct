@@ -204,7 +204,7 @@ def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
         user_agent="Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
         viewport={"width": 1280, "height": 720},
         bypass_csp=True,
-        slow_mo=1000,
+        #slow_mo=1000,
         chromium_sandbox=True,
         channel="chrome-dev"
     )
