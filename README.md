@@ -7,6 +7,7 @@
 <a href="https://www.licenses.ai/ai-licenses"><img src="https://img.shields.io/badge/OPEN RAIL-License-green.svg" alt="Open RAIL License"></a>
 <a href="https://huggingface.co/datasets/osunlp/Mind2Web"><img src="https://img.shields.io/badge/Mind2Web-Dataset-yellow.svg" alt="Mind2Web Benchmark"></a>
 <a href="https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web"><img src="https://img.shields.io/badge/Multimodal Mind2Web-Dataset-blue.svg" alt="Mind2Web Benchmark"></a>
+<a href="https://pypi.org/project/seeact/"><img src="https://img.shields.io/badge/seeact-PyPI-red.svg" alt="Python 3.10"></a>
 </p>
 
 <p align="center">
@@ -36,6 +37,8 @@ It consists of three main components:
 </p>
 
 <h3>Updates</h3>
+
+- 2024/4/28: Released [SeeAct Python Package](https://pypi.org/project/seeact/#history), with many updates and many features on the way. Have a try with `pip install seeact`
 
 - 2024/3/18: [Multimodal-Mind2Web](https://huggingface.co/datasets/osunlp/Multimodal-Mind2Web) dataset released. We have paired each HTML document with the corresponding webpage screenshot image and saved the trouble of downloading [Mind2Web Raw Dump](https://github.com/OSU-NLP-Group/Mind2Web?tab=readme-ov-file#raw-dump-with-full-traces-and-snapshots).
 
