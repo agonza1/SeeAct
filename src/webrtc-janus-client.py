@@ -253,7 +253,7 @@ class AudioTrackProcessor:
             self.speech_recorder.stop()
         full_sentence = self.speech_recorder.text()
         self.add_message_to_queue('fullSentence', full_sentence)
-        store.add_task(extract_task(full_sentence), "https://www.aa.com/homePage.do?locale=en_US")
+        store.add_task(extract_task(full_sentence), "https://www.google.com?locale=en_US")
         print(f"\rSentence: {full_sentence}")
         self.add_message_to_queue('Info', 'Started action process...')
 
