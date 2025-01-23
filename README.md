@@ -21,12 +21,19 @@ R-SeeAct (based on the forked SeeAct) is a system for <a href="https://osu-nlp-g
 with a focus on large multimodal models (LMMs) such as GPT-4V(ision). 
 It consists of three main components: 
 
-(1) A robust codebase that supports running web agents on live websites, and
+(1) A robust codebase that supports running web agents on live websites,
 
-(2) An innovative framework that utilizes LMMs as generalist web agents.
+(2) An innovative framework that utilizes LMMs as generalist web agents and
 
-(3) A [Janus](https://github.com/meetecho/janus-gateway) compatible WebRTC client (based on [Aiortc](https://github.com/aiortc/aiortc)) that can be remotely controlled
+(3) A [Janus](https://github.com/meetecho/janus-gateway) compatible WebRTC client (based on [Aiortc](https://github.com/aiortc/aiortc)) that can be remotely controlled. You can directly use this: https://github.com/agonza1/reunitus/tree/seeact-bot-integration to connect to R-SeeAct.
 
+The whole setup works as follows:
+
+![image](https://github.com/user-attachments/assets/6555bbd2-1319-4bd3-877c-49b80dc6f903)
+
+The web client application connects and through speech you request the operations the browser has to do. More info on the project: https://www.slideshare.net/slideshow/unveiling-the-tech-salsa-of-lams-with-janus-in-realtime-applications/267672793#1
+
+This is the visualization of how the browser performs the actions which is the original implementation of SeeAct:
 ![Demo Video GIF](https://raw.githubusercontent.com/OSU-NLP-Group/SeeAct/gh-pages/static/videos/readme_demo.gif)
 
 <p align="center">
